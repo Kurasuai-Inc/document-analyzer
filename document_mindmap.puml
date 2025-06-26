@@ -1,4 +1,8 @@
 @startmindmap
+!define PLANTUML_LIMIT_SIZE 16384
+skinparam dpi 300
+skinparam defaultFontSize 12
+skinparam minClassWidth 50
 * Document Root
 ** STELLA_REFLECTION
 ** README

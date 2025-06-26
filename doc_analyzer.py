@@ -172,6 +172,10 @@ class DocumentAnalyzer:
         
         plantuml_lines = [
             "@startmindmap",
+            "!define PLANTUML_LIMIT_SIZE 16384",
+            "skinparam dpi 300",
+            "skinparam defaultFontSize 12",
+            "skinparam minClassWidth 50",
             "* Document Root",
         ]
         
@@ -319,7 +323,8 @@ def analyze(path: str, verbose: bool, graph: bool, mindmap: bool, discord: Optio
             # PlantUMLで画像生成を試す
             import subprocess
             try:
-                result = subprocess.run(['plantuml', mindmap_path], 
+                result = subprocess.run(['plantuml', '-tpng', '-charset', 'UTF-8', 
+                                       '-DPLANTUML_LIMIT_SIZE=16384', mindmap_path], 
                                       capture_output=True, text=True, timeout=30)
                 if result.returncode == 0:
                     png_path = mindmap_path.replace('.puml', '.png')
