@@ -3,6 +3,8 @@
 グラフ可視化モジュール
 ドキュメント間のリンク関係をグラフとして可視化し、画像として保存する
 """
+import matplotlib
+matplotlib.use('Agg')  # バックエンドを設定
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import networkx as nx
@@ -19,15 +21,10 @@ class GraphVisualizer:
         """
         self.analyzer = analyzer
         # 日本語フォントの設定
-        try:
-            # 日本語フォントを探す
-            fonts = [f for f in fm.findSystemFonts() if 'noto' in f.lower() or 'takao' in f.lower()]
-            if fonts:
-                plt.rcParams['font.family'] = fm.FontProperties(fname=fonts[0]).get_name()
-            else:
-                plt.rcParams['font.family'] = 'DejaVu Sans'
-        except:
-            plt.rcParams['font.family'] = 'DejaVu Sans'
+        # matplotlibのバックエンドをAggに設定（既に設定済み）
+        # 日本語を含むラベルは英語に置き換えるか、ASCIIのみ使用する方針に変更
+        plt.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+        plt.rcParams['axes.unicode_minus'] = False
     
     def create_graph(self) -> nx.DiGraph:
         """有向グラフを作成"""
@@ -114,19 +111,19 @@ class GraphVisualizer:
         
         # 凡例を追加
         legend_elements = [
-            plt.scatter([], [], c='#ff6b6b', s=100, label='孤立ノード'),
-            plt.scatter([], [], c='#ffd43b', s=100, label='入力リンクなし'),
-            plt.scatter([], [], c='#51cf66', s=100, label='出力リンクなし'),
-            plt.scatter([], [], c='#339af0', s=100, label='通常ノード')
+            plt.scatter([], [], c='#ff6b6b', s=100, label='Isolated'),
+            plt.scatter([], [], c='#ffd43b', s=100, label='No Incoming'),
+            plt.scatter([], [], c='#51cf66', s=100, label='No Outgoing'),
+            plt.scatter([], [], c='#339af0', s=100, label='Normal')
         ]
         plt.legend(handles=legend_elements, loc='upper right', fontsize=12)
         
-        # タイトルと統計情報
+        # タイトルと統計情報（英語表記に変更）
         stats = self.analyzer.get_statistics()
-        title = f"ドキュメントリンクグラフ\n"
-        title += f"ノード数: {stats['total_documents']} | "
-        title += f"リンク数: {stats['total_links']} | "
-        title += f"孤立: {stats['isolated_documents']}"
+        title = f"Document Link Graph\n"
+        title += f"Nodes: {stats['total_documents']} | "
+        title += f"Links: {stats['total_links']} | "
+        title += f"Isolated: {stats['isolated_documents']}"
         plt.title(title, fontsize=16, fontweight='bold')
         
         plt.axis('off')
