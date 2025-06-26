@@ -18,6 +18,7 @@ class DocumentAnalyzer:
         self.documents: Dict[str, Path] = {}
         self.links: Dict[str, Set[str]] = {}
         self.incoming_links: Dict[str, Set[str]] = {}
+        self.broken_links: Dict[str, List[Tuple[str, str]]] = {}  # doc_path -> [(link_text, link_url)]
         
     def scan_documents(self) -> None:
         """ドキュメントをスキャン"""
@@ -29,6 +30,7 @@ class DocumentAnalyzer:
             self.documents[str(relative_path)] = md_file
             self.links[str(relative_path)] = set()
             self.incoming_links[str(relative_path)] = set()
+            self.broken_links[str(relative_path)] = []
     
     def extract_links(self) -> None:
         """各ドキュメントからリンクを抽出"""
@@ -39,7 +41,7 @@ class DocumentAnalyzer:
                 content = doc_file.read_text(encoding='utf-8')
                 matches = link_pattern.findall(content)
                 
-                for _, link in matches:
+                for link_text, link in matches:
                     # 外部リンクは除外
                     if link.startswith('http://') or link.startswith('https://'):
                         continue
@@ -54,6 +56,9 @@ class DocumentAnalyzer:
                         if target_path:
                             self.links[doc_path].add(target_path)
                             self.incoming_links[target_path].add(doc_path)
+                        else:
+                            # リンク切れを記録
+                            self.broken_links[doc_path].append((link_text, link))
             except Exception as e:
                 print(f"Error reading {doc_path}: {e}")
     
@@ -88,13 +93,15 @@ class DocumentAnalyzer:
     def get_statistics(self) -> Dict[str, int]:
         """統計情報を取得"""
         total_links = sum(len(links) for links in self.links.values())
+        total_broken = sum(len(broken) for broken in self.broken_links.values())
         
         return {
             'total_documents': len(self.documents),
             'total_links': total_links,
             'isolated_documents': len(self.find_isolated_documents()),
             'documents_with_no_incoming': len([d for d in self.documents if not self.incoming_links.get(d)]),
-            'documents_with_no_outgoing': len([d for d in self.documents if not self.links.get(d)])
+            'documents_with_no_outgoing': len([d for d in self.documents if not self.links.get(d)]),
+            'broken_links': total_broken
         }
 
 
@@ -113,6 +120,7 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
     stats_table.add_row("孤立したドキュメント", str(stats['isolated_documents']))
     stats_table.add_row("入力リンクなし", str(stats['documents_with_no_incoming']))
     stats_table.add_row("出力リンクなし", str(stats['documents_with_no_outgoing']))
+    stats_table.add_row("壊れたリンク", str(stats['broken_links']))
     
     console.print(stats_table)
     console.print()
@@ -123,6 +131,22 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
         console.print("[bold red]孤立したドキュメント:[/bold red]")
         for doc in isolated:
             console.print(f"  • {doc}")
+        console.print()
+    
+    # 壊れたリンク
+    has_broken_links = False
+    for doc_path, broken_links in analyzer.broken_links.items():
+        if broken_links:
+            has_broken_links = True
+            break
+    
+    if has_broken_links:
+        console.print("[bold red]壊れたリンク:[/bold red]")
+        for doc_path, broken_links in sorted(analyzer.broken_links.items()):
+            if broken_links:
+                console.print(f"  [cyan]{doc_path}[/cyan]")
+                for link_text, link_url in broken_links:
+                    console.print(f"    • [{link_text}] → {link_url}")
         console.print()
     
     # ドキュメントごとのリンク情報
