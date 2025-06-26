@@ -4,6 +4,7 @@
 Markdownドキュメント間のリンク関係を分析して、孤立したドキュメントを見つける
 """
 import re
+import hashlib
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Optional
 import click
@@ -19,6 +20,8 @@ class DocumentAnalyzer:
         self.links: Dict[str, Set[str]] = {}
         self.incoming_links: Dict[str, Set[str]] = {}
         self.broken_links: Dict[str, List[Tuple[str, str]]] = {}  # doc_path -> [(link_text, link_url)]
+        self.document_hashes: Dict[str, str] = {}
+        self.duplicates: Dict[str, List[str]] = {}
         
     def scan_documents(self) -> None:
         """ドキュメントをスキャン"""
@@ -31,6 +34,29 @@ class DocumentAnalyzer:
             self.links[str(relative_path)] = set()
             self.incoming_links[str(relative_path)] = set()
             self.broken_links[str(relative_path)] = []
+    
+    def calculate_document_hashes(self) -> None:
+        """各ドキュメントのハッシュ値を計算して重複を検出"""
+        hash_to_docs: Dict[str, List[str]] = {}
+        
+        for doc_path, doc_file in self.documents.items():
+            try:
+                content = doc_file.read_text(encoding='utf-8')
+                # 改行やスペースを正規化してからハッシュ値を計算
+                normalized_content = '\n'.join(line.strip() for line in content.splitlines() if line.strip())
+                file_hash = hashlib.md5(normalized_content.encode()).hexdigest()
+                
+                self.document_hashes[doc_path] = file_hash
+                
+                if file_hash in hash_to_docs:
+                    hash_to_docs[file_hash].append(doc_path)
+                else:
+                    hash_to_docs[file_hash] = [doc_path]
+            except Exception:
+                pass
+        
+        # 重複を見つける
+        self.duplicates = {hash_val: docs for hash_val, docs in hash_to_docs.items() if len(docs) > 1}
     
     def extract_links(self) -> None:
         """各ドキュメントからリンクを抽出"""
@@ -95,13 +121,17 @@ class DocumentAnalyzer:
         total_links = sum(len(links) for links in self.links.values())
         total_broken = sum(len(broken) for broken in self.broken_links.values())
         
+        # 重複ファイルの総数を計算
+        duplicate_count = sum(len(docs) - 1 for docs in self.duplicates.values())
+        
         return {
             'total_documents': len(self.documents),
             'total_links': total_links,
             'isolated_documents': len(self.find_isolated_documents()),
             'documents_with_no_incoming': len([d for d in self.documents if not self.incoming_links.get(d)]),
             'documents_with_no_outgoing': len([d for d in self.documents if not self.links.get(d)]),
-            'broken_links': total_broken
+            'broken_links': total_broken,
+            'duplicate_documents': duplicate_count
         }
 
 
@@ -121,6 +151,7 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
     stats_table.add_row("入力リンクなし", str(stats['documents_with_no_incoming']))
     stats_table.add_row("出力リンクなし", str(stats['documents_with_no_outgoing']))
     stats_table.add_row("壊れたリンク", str(stats['broken_links']))
+    stats_table.add_row("重複ドキュメント", str(stats['duplicate_documents']))
     
     console.print(stats_table)
     console.print()
@@ -147,6 +178,15 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
                 console.print(f"  [cyan]{doc_path}[/cyan]")
                 for link_text, link_url in broken_links:
                     console.print(f"    • [{link_text}] → {link_url}")
+        console.print()
+    
+    # 重複ドキュメント
+    if analyzer.duplicates:
+        console.print("[bold yellow]重複ドキュメント:[/bold yellow]")
+        for hash_val, docs in analyzer.duplicates.items():
+            console.print(f"  以下のファイルは内容が同一です:")
+            for doc in sorted(docs):
+                console.print(f"    • {doc}")
         console.print()
     
     # ドキュメントごとのリンク情報
@@ -188,6 +228,9 @@ def analyze(path: str, verbose: bool, graph: bool, discord: Optional[str]):
     
     # リンクを抽出
     analyzer.extract_links()
+    
+    # ハッシュ値を計算して重複を検出
+    analyzer.calculate_document_hashes()
     
     # 結果を表示
     display_results(analyzer, console)
