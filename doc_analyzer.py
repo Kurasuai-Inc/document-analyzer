@@ -173,7 +173,7 @@ class DocumentAnalyzer:
         plantuml_lines = [
             "@startmindmap",
             "!define PLANTUML_LIMIT_SIZE 16384",
-            "skinparam dpi 300",
+            "skinparam dpi 300", 
             "skinparam defaultFontSize 12",
             "skinparam minClassWidth 50",
             "* Document Root",
@@ -186,12 +186,35 @@ class DocumentAnalyzer:
                 display_name = name.replace('.md', '').replace('-', '_')
                 
                 if info['type'] == 'dir':
-                    # ディレクトリ
-                    plantuml_lines.append(f"{indent} {display_name}")
+                    # ディレクトリ（青色）
+                    plantuml_lines.append(f"{indent} 📁 {display_name}")
                     traverse(info['children'], depth + 1)
                 else:
-                    # ファイル
-                    plantuml_lines.append(f"{indent} {display_name}")
+                    # ファイルの色分け判定
+                    doc_path = info['path']
+                    has_broken_links = len(self.broken_links.get(doc_path, [])) > 0
+                    is_isolated = info['isolated']
+                    incoming_count = len(self.incoming_links.get(doc_path, set()))
+                    outgoing_count = len(self.links.get(doc_path, set()))
+                    
+                    if is_isolated:
+                        # 孤立ファイル（赤色）
+                        color = "[#red]"
+                        suffix = " (ISOLATED)"
+                    elif has_broken_links:
+                        # 壊れたリンクあり（オレンジ色）
+                        color = "[#orange]"
+                        suffix = " (BROKEN LINKS)"
+                    elif incoming_count >= 5 or outgoing_count >= 8:
+                        # 高リンクファイル（紫色）
+                        color = "[#Plum]"
+                        suffix = " (HIGH LINKS)"
+                    else:
+                        # 通常ファイル（緑色）
+                        color = "[#lightgreen]"
+                        suffix = ""
+                    
+                    plantuml_lines.append(f"{indent}{color} {display_name}{suffix}")
         
         traverse(tree)
         

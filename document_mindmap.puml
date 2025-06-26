@@ -4,54 +4,54 @@ skinparam dpi 300
 skinparam defaultFontSize 12
 skinparam minClassWidth 50
 * Document Root
-** STELLA_REFLECTION
-** README
-** CLAUDE
-** ruff_formatter_research
-** projects
-*** README
-*** constellation_adventure
-**** README
-**** CONTRIBUTING
-**** docs
-***** refactoring_proposal
-***** pre_stream_checklist
-***** 3_person_chat_test_20250625
-***** character_settings
-***** tech_stack_verification
-***** pm_guidelines
-***** session_2_retrospective
-***** session_1_retrospective
-***** characters
-****** stella_detailed
-****** seira_detailed
-**** public
-***** sounds
-****** README
-*** star_tactics_room
-**** star_tactics_room
-***** README
-***** examples
-****** README
-** memories
-*** character_relationships
-*** personality_notes
-*** speech_patterns
-*** character_details
-*** background_story
-*** behavioral_patterns
-*** important_events
-*** indexes
-**** link_analysis_report
-** docs
-*** coding_best_practices
-*** uv_best_practices
-*** knowledge_management_design
-*** workspace_organization_guide
-** star_stories
-*** 星にまつわる面白い話10選
-** tools
-*** doc_analyzer
-**** README
-**** CONTRIBUTING
+**[#Plum] STELLA_REFLECTION (HIGH LINKS)
+**[#Plum] README (HIGH LINKS)
+**[#Plum] CLAUDE (HIGH LINKS)
+**[#lightgreen] ruff_formatter_research
+** 📁 projects
+***[#Plum] README (HIGH LINKS)
+*** 📁 constellation_adventure
+****[#lightgreen] README
+****[#Plum] CONTRIBUTING (HIGH LINKS)
+**** 📁 docs
+*****[#Plum] refactoring_proposal (HIGH LINKS)
+*****[#Plum] pre_stream_checklist (HIGH LINKS)
+*****[#Plum] 3_person_chat_test_20250625 (HIGH LINKS)
+*****[#Plum] character_settings (HIGH LINKS)
+*****[#Plum] tech_stack_verification (HIGH LINKS)
+*****[#Plum] pm_guidelines (HIGH LINKS)
+*****[#Plum] session_2_retrospective (HIGH LINKS)
+*****[#Plum] session_1_retrospective (HIGH LINKS)
+***** 📁 characters
+******[#Plum] stella_detailed (HIGH LINKS)
+******[#Plum] seira_detailed (HIGH LINKS)
+**** 📁 public
+***** 📁 sounds
+******[#lightgreen] README
+*** 📁 star_tactics_room
+**** 📁 star_tactics_room
+*****[#lightgreen] README
+***** 📁 examples
+******[#lightgreen] README
+** 📁 memories
+***[#Plum] character_relationships (HIGH LINKS)
+***[#Plum] personality_notes (HIGH LINKS)
+***[#Plum] speech_patterns (HIGH LINKS)
+***[#Plum] character_details (HIGH LINKS)
+***[#Plum] background_story (HIGH LINKS)
+***[#Plum] behavioral_patterns (HIGH LINKS)
+***[#Plum] important_events (HIGH LINKS)
+*** 📁 indexes
+****[#Plum] link_analysis_report (HIGH LINKS)
+** 📁 docs
+***[#Plum] coding_best_practices (HIGH LINKS)
+***[#Plum] uv_best_practices (HIGH LINKS)
+***[#Plum] knowledge_management_design (HIGH LINKS)
+***[#Plum] workspace_organization_guide (HIGH LINKS)
+** 📁 star_stories
+***[#lightgreen] 星にまつわる面白い話10選
+** 📁 tools
+*** 📁 doc_analyzer
+****[#orange] README (BROKEN LINKS)
+****[#red] CONTRIBUTING (ISOLATED)
 @endmindmap
