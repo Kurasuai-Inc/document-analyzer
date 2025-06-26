@@ -19,15 +19,78 @@ class GraphVisualizer:
         """
         self.analyzer = analyzer
         # 日本語フォントの設定
-        try:
-            # 日本語フォントを探す
-            fonts = [f for f in fm.findSystemFonts() if 'noto' in f.lower() or 'takao' in f.lower()]
-            if fonts:
-                plt.rcParams['font.family'] = fm.FontProperties(fname=fonts[0]).get_name()
-            else:
-                plt.rcParams['font.family'] = 'DejaVu Sans'
-        except:
-            plt.rcParams['font.family'] = 'DejaVu Sans'
+        self._setup_japanese_font()
+    
+    def _setup_japanese_font(self):
+        """日本語フォントを設定"""
+        import platform
+        system = platform.system()
+        
+        # 優先順位の高い日本語フォントリスト
+        font_candidates = []
+        
+        if system == 'Linux':
+            font_candidates = [
+                'Noto Sans CJK JP',
+                'Noto Sans JP',
+                'IPAexGothic',
+                'IPAPGothic', 
+                'TakaoGothic',
+                'VL Gothic',
+                'Droid Sans Japanese',
+                'Ubuntu'
+            ]
+        elif system == 'Darwin':  # macOS
+            font_candidates = [
+                'Hiragino Sans',
+                'Hiragino Kaku Gothic Pro',
+                'Yu Gothic',
+                'Osaka',
+                'Meiryo'
+            ]
+        elif system == 'Windows':
+            font_candidates = [
+                'Yu Gothic',
+                'Meiryo',
+                'MS Gothic',
+                'MS PGothic'
+            ]
+        
+        # システムフォントから候補を探す
+        found_font = None
+        available_fonts = set([f.name for f in fm.fontManager.ttflist])
+        
+        for font_name in font_candidates:
+            if font_name in available_fonts:
+                found_font = font_name
+                break
+        
+        # フォントパスから直接探す（fallback）
+        if not found_font:
+            font_paths = fm.findSystemFonts()
+            for font_path in font_paths:
+                font_lower = font_path.lower()
+                if any(keyword in font_lower for keyword in ['noto', 'ipa', 'takao', 'gothic', 'sans']):
+                    try:
+                        prop = fm.FontProperties(fname=font_path)
+                        found_font = prop.get_name()
+                        break
+                    except:
+                        continue
+        
+        # フォントを設定
+        if found_font:
+            plt.rcParams['font.family'] = found_font
+            plt.rcParams['font.sans-serif'] = [found_font]
+            print(f"Using Japanese font: {found_font}")
+        else:
+            # フォールバック（英語フォント）
+            plt.rcParams['font.family'] = 'sans-serif'
+            plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Helvetica']
+            print("Warning: Japanese font not found, using default font")
+        
+        # マイナス記号の表示設定
+        plt.rcParams['axes.unicode_minus'] = False
     
     def create_graph(self) -> nx.DiGraph:
         """有向グラフを作成"""
