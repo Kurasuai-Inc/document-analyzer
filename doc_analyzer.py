@@ -133,6 +133,71 @@ class DocumentAnalyzer:
             'broken_links': total_broken,
             'duplicate_documents': duplicate_count
         }
+    
+    def build_tree_structure(self) -> Dict:
+        """ディレクトリ構造からツリーを構築"""
+        tree = {}
+        
+        for doc_path in self.documents:
+            path = Path(doc_path)
+            parts = path.parts
+            
+            current = tree
+            # ディレクトリ階層を辿る
+            for part in parts[:-1]:  # ファイル名以外
+                if part not in current:
+                    current[part] = {'type': 'dir', 'children': {}}
+                current = current[part]['children']
+            
+            # ファイルを追加
+            filename = parts[-1]
+            current[filename] = {
+                'type': 'file',
+                'path': doc_path,
+                'isolated': doc_path in self.find_isolated_documents()
+            }
+        
+        return tree
+    
+    def generate_plantuml_mindmap(self, output_path: str = "document_mindmap.puml") -> str:
+        """PlantUMLマインドマップ形式でツリーを生成
+        
+        Args:
+            output_path: 出力ファイルのパス
+            
+        Returns:
+            保存したファイルのパス
+        """
+        tree = self.build_tree_structure()
+        
+        plantuml_lines = [
+            "@startmindmap",
+            "* Document Root",
+        ]
+        
+        def traverse(node_dict, depth=1):
+            indent = "*" * (depth + 1)
+            
+            for name, info in node_dict.items():
+                display_name = name.replace('.md', '').replace('-', '_')
+                
+                if info['type'] == 'dir':
+                    # ディレクトリ
+                    plantuml_lines.append(f"{indent} {display_name}")
+                    traverse(info['children'], depth + 1)
+                else:
+                    # ファイル
+                    plantuml_lines.append(f"{indent} {display_name}")
+        
+        traverse(tree)
+        
+        plantuml_lines.append("@endmindmap")
+        
+        # ファイルに保存
+        output_file = Path(output_path)
+        output_file.write_text('\n'.join(plantuml_lines), encoding='utf-8')
+        
+        return str(output_file)
 
 
 def display_results(analyzer: DocumentAnalyzer, console: Console):
@@ -207,8 +272,9 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
 @click.option('--path', '-p', default=None, help='分析するルートパス')
 @click.option('--verbose', '-v', is_flag=True, help='詳細情報を表示')
 @click.option('--graph', '-g', is_flag=True, help='グラフを生成して表示')
+@click.option('--mindmap', '-m', is_flag=True, help='PlantUMLマインドマップを生成')
 @click.option('--discord', '-d', type=str, help='グラフをDiscordチャンネルに送信 (チャンネルID)')
-def analyze(path: str, verbose: bool, graph: bool, discord: Optional[str]):
+def analyze(path: str, verbose: bool, graph: bool, mindmap: bool, discord: Optional[str]):
     """ドキュメントのリンク関係を分析"""
     console = Console()
     
@@ -243,6 +309,27 @@ def analyze(path: str, verbose: bool, graph: bool, discord: Optional[str]):
                 console.print(f"\n{doc_path}:")
                 for link in sorted(links):
                     console.print(f"  → {link}")
+    
+    # マインドマップ生成
+    if mindmap:
+        try:
+            mindmap_path = analyzer.generate_plantuml_mindmap()
+            console.print(f"\n[bold green]PlantUMLマインドマップを生成しました:[/bold green] {mindmap_path}")
+            
+            # PlantUMLで画像生成を試す
+            import subprocess
+            try:
+                result = subprocess.run(['plantuml', mindmap_path], 
+                                      capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    png_path = mindmap_path.replace('.puml', '.png')
+                    console.print(f"[bold green]PNG画像も生成しました:[/bold green] {png_path}")
+                else:
+                    console.print(f"[yellow]PlantUML実行エラー:[/yellow] {result.stderr}")
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+                console.print(f"[yellow]PlantUMLコマンドが見つかりません。PUMLファイルのみ生成しました[/yellow]")
+        except Exception as e:
+            console.print(f"\n[bold red]エラー:[/bold red] マインドマップ生成中にエラーが発生しました: {str(e)}")
     
     # グラフ生成
     if graph or discord:
