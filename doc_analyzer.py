@@ -5,7 +5,7 @@ Markdownドキュメント間のリンク関係を分析して、孤立したド
 """
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 import click
 from rich.console import Console
 from rich.table import Table
@@ -142,7 +142,9 @@ def display_results(analyzer: DocumentAnalyzer, console: Console):
 @click.command()
 @click.option('--path', '-p', default=None, help='分析するルートパス')
 @click.option('--verbose', '-v', is_flag=True, help='詳細情報を表示')
-def analyze(path: str, verbose: bool):
+@click.option('--graph', '-g', is_flag=True, help='グラフを生成して表示')
+@click.option('--discord', '-d', type=str, help='グラフをDiscordチャンネルに送信 (チャンネルID)')
+def analyze(path: str, verbose: bool, graph: bool, discord: Optional[str]):
     """ドキュメントのリンク関係を分析"""
     console = Console()
     
@@ -174,6 +176,34 @@ def analyze(path: str, verbose: bool):
                 console.print(f"\n{doc_path}:")
                 for link in sorted(links):
                     console.print(f"  → {link}")
+    
+    # グラフ生成
+    if graph or discord:
+        try:
+            from graph_visualizer import GraphVisualizer
+            visualizer = GraphVisualizer(analyzer)
+            
+            # グラフを生成
+            graph_path = visualizer.visualize()
+            console.print(f"\n[bold green]グラフを生成しました:[/bold green] {graph_path}")
+            
+            # Discordに送信
+            if discord:
+                import os
+                import sys
+                # MCPツールを使うためのセットアップ
+                console.print(f"\n[bold blue]Discordチャンネル {discord} に送信中...[/bold blue]")
+                # 注: 実際のDiscord送信はMCPツール経由で行う必要がある
+                console.print(f"[yellow]Discord送信機能は別途実装が必要です[/yellow]")
+            
+        except ImportError as e:
+            console.print(f"\n[bold red]エラー:[/bold red] グラフ生成に必要なモジュールがありません: {str(e)}")
+            console.print(f"以下のコマンドでインストールしてください:")
+            console.print(f"uv add networkx matplotlib numpy")
+        except Exception as e:
+            console.print(f"\n[bold red]エラー:[/bold red] グラフ生成中にエラーが発生しました: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == '__main__':
