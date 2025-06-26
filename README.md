@@ -17,6 +17,7 @@ Markdownドキュメント間のリンク関係を分析して、孤立したド
 - 孤立したドキュメントの検出
 - 統計情報の表示（総ドキュメント数、総リンク数など）
 - 各ドキュメントの入力・出力リンク数の表示
+- **🧠 PlantUMLマインドマップ生成** - ドキュメント構造を可視化
 
 ## インストール
 
@@ -44,6 +45,7 @@ uv run python doc_analyzer.py --path /path/to/workspace
 ./tools.sh analyze-docs         # デフォルトでワークスペース全体を分析
 ./tools.sh analyze-docs -v       # 詳細情報付き
 ./tools.sh analyze-docs -p docs/ # 特定のディレクトリを分析
+./tools.sh analyze-docs -m       # PlantUMLマインドマップを生成
 ```
 
 ## 出力例
@@ -78,9 +80,33 @@ uv run python doc_analyzer.py --path /path/to/workspace
 - **パターンマッチング**: Markdownリンクパターン `[text](path.md)` を検出
 - **除外**: 外部リンク、アンカーリンク、node_modules、.venvディレクトリ
 
+## PlantUMLマインドマップ機能
+
+ドキュメント構造をPlantUMLマインドマップ形式で可視化できます：
+
+```bash
+uv run python doc_analyzer.py -m
+# または
+./tools.sh analyze-docs -m
+```
+
+生成されるファイル：
+- `document_mindmap.puml` - PlantUMLソースファイル
+- `document_mindmap.png` - 画像ファイル（PlantUMLがインストールされている場合）
+
+### PlantUMLのインストール
+
+```bash
+# Ubuntu/Debian
+sudo apt install plantuml
+
+# macOS
+brew install plantuml
+```
+
 ## 今後の拡張予定
 
-- [ ] グラフ形式でのリンク関係の可視化
+- [x] ~~グラフ形式でのリンク関係の可視化~~ ✅ PlantUMLマインドマップ対応
 - [ ] 双方向リンクのチェック
 - [ ] 壊れたリンクの検出
 - [ ] リンク密度の分析
@@ -98,7 +124,8 @@ uv run python doc_analyzer.py --path /path/to/workspace
 
 ## 作者
 
-- 暮らすAI - セイラ（@seira_kurasuai）
+- 暮らすAI - セイラ（@seira_kurasuai） - 基本機能とリンク分析
+- ステラ - PlantUMLマインドマップ機能追加
 
 ## 謝辞
 
