@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Files D3 Tree Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        #tree-container {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .node circle {
+            fill: #69b3a2;
+            stroke: #333;
+            stroke-width: 2px;
+            cursor: pointer;
+        }
+        
+        .node.directory circle {
+            fill: #4dabf7;
+        }
+        
+        .node.file circle {
+            fill: #69db7c;
+        }
+        
+        .node text {
+            font: 12px sans-serif;
+            fill: #333;
+            cursor: pointer;
+        }
+        
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2px;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .controls button {
+            margin: 0 10px;
+            padding: 8px 16px;
+            background-color: #4dabf7;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background-color: #339af0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 Markdown Files D3 Tree Visualizer 🌳</h1>
+        
+        <div class="controls">
+            <button onclick="resetZoom()">Reset Zoom</button>
+            <button onclick="expandAll()">Expand All</button>
+            <button onclick="collapseAll()">Collapse All</button>
+        </div>
+        
+        <div id="tree-container"></div>
+    </div>
+
+    <script>
+        // Sample tree data (would be generated from Python backend)
+        const treeData = {
+            "name": "nebby/",
+            "type": "directory",
+            "children": [
+                {
+                    "name": "CLAUDE.md",
+                    "type": "file"
+                },
+                {
+                    "name": "docs/",
+                    "type": "directory",
+                    "children": [
+                        {
+                            "name": "neby-character/",
+                            "type": "directory",
+                            "children": [
+                                {"name": "basic-info.md", "type": "file"},
+                                {"name": "traits.md", "type": "file"},
+                                {"name": "communication.md", "type": "file"}
+                            ]
+                        },
+                        {
+                            "name": "project/",
+                            "type": "directory",
+                            "children": [
+                                {"name": "company-timeline.md", "type": "file"},
+                                {"name": "documentation-guidelines.md", "type": "file"}
+                            ]
+                        },
+                        {
+                            "name": "research/",
+                            "type": "directory",
+                            "children": [
+                                {"name": "business-vision-details.md", "type": "file"},
+                                {"name": "character-development-passion.md", "type": "file"}
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "team-members.md",
+                    "type": "file"
+                }
+            ]
+        };
+
+        // Set up dimensions and margins
+        const margin = {top: 20, right: 120, bottom: 20, left: 120};
+        const width = 960 - margin.right - margin.left;
+        const height = 800 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select("#tree-container")
+            .append("svg")
+            .attr("width", width + margin.right + margin.left)
+            .attr("height", height + margin.top + margin.bottom);
+
+        const g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Create tree layout
+        const tree = d3.tree()
+            .size([height, width]);
+
+        // Create root node
+        let root = d3.hierarchy(treeData);
+        root.x0 = height / 2;
+        root.y0 = 0;
+
+        // Collapse nodes initially
+        root.children.forEach(collapse);
+
+        function collapse(d) {
+            if (d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 3])
+            .on("zoom", function(event) {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Update function
+        function update(source) {
+            // Compute new tree layout
+            const treeData = tree(root);
+            const nodes = treeData.descendants();
+            const links = treeData.descendants().slice(1);
+
+            // Normalize for fixed-depth
+            nodes.forEach(d => d.y = d.depth * 180);
+
+            // Update nodes
+            const node = g.selectAll('g.node')
+                .data(nodes, d => d.id || (d.id = ++i));
+
+            // Enter new nodes
+            const nodeEnter = node.enter().append('g')
+                .attr('class', d => 'node ' + d.data.type)
+                .attr("transform", d => "translate(" + source.y0 + "," + source.x0 + ")")
+                .on('click', click);
+
+            // Add circle for nodes
+            nodeEnter.append('circle')
+                .attr('r', 1e-6);
+
+            // Add text for nodes
+            nodeEnter.append('text')
+                .attr("dy", ".35em")
+                .attr("x", d => d.children || d._children ? -13 : 13)
+                .attr("text-anchor", d => d.children || d._children ? "end" : "start")
+                .text(d => d.data.name)
+                .style("fill-opacity", 1e-6);
+
+            // Update
+            const nodeUpdate = nodeEnter.merge(node);
+
+            nodeUpdate.transition()
+                .duration(750)
+                .attr("transform", d => "translate(" + d.y + "," + d.x + ")");
+
+            nodeUpdate.select('circle')
+                .attr('r', 10)
+                .style("fill", d => d._children ? "lightsteelblue" : "#fff");
+
+            nodeUpdate.select('text')
+                .style("fill-opacity", 1);
+
+            // Remove exiting nodes
+            const nodeExit = node.exit().transition()
+                .duration(750)
+                .attr("transform", d => "translate(" + source.y + "," + source.x + ")")
+                .remove();
+
+            nodeExit.select('circle')
+                .attr('r', 1e-6);
+
+            nodeExit.select('text')
+                .style('fill-opacity', 1e-6);
+
+            // Update links
+            const link = g.selectAll('path.link')
+                .data(links, d => d.id);
+
+            // Enter new links
+            const linkEnter = link.enter().insert('path', "g")
+                .attr("class", "link")
+                .attr('d', d => {
+                    const o = {x: source.x0, y: source.y0};
+                    return diagonal(o, o);
+                });
+
+            // Update
+            const linkUpdate = linkEnter.merge(link);
+
+            linkUpdate.transition()
+                .duration(750)
+                .attr('d', d => diagonal(d, d.parent));
+
+            // Remove exiting links
+            const linkExit = link.exit().transition()
+                .duration(750)
+                .attr('d', d => {
+                    const o = {x: source.x, y: source.y};
+                    return diagonal(o, o);
+                })
+                .remove();
+
+            // Store old positions
+            nodes.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+
+        // Create diagonal path
+        function diagonal(s, d) {
+            return `M ${s.y} ${s.x}
+                    C ${(s.y + d.y) / 2} ${s.x},
+                      ${(s.y + d.y) / 2} ${d.x},
+                      ${d.y} ${d.x}`;
+        }
+
+        // Click event handler
+        function click(event, d) {
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            update(d);
+        }
+
+        // Control functions
+        function resetZoom() {
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+        }
+
+        function expandAll() {
+            root.descendants().forEach(d => {
+                if (d._children) {
+                    d.children = d._children;
+                    d._children = null;
+                }
+            });
+            update(root);
+        }
+
+        function collapseAll() {
+            root.descendants().forEach(d => {
+                if (d.children) {
+                    d._children = d.children;
+                    d.children = null;
+                }
+            });
+            root.children = root._children;
+            root._children = null;
+            update(root);
+        }
+
+        // Counter for unique IDs
+        let i = 0;
+
+        // Initial render
+        update(root);
+    </script>
+</body>
+</html>
